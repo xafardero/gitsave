@@ -5,15 +5,17 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/mitchellh/go-homedir"
 	"github.com/xafardero/gitsave/backup/github"
 )
 
 func main() {
 	folder := flag.String("folder", "/tmp/gitsave", "Folder to clone repositorires. Default: /tmp/gitsave")
+	sshPrivateKey := flag.String("key", "", "Private key used to clone repositories. Default: $HOME/.ssh/id_rsa")
 
-	githubToken := flag.String("gh-token", "", "Github token ID")
-	githubOrganization := flag.String("org", "", "Github organization")
-	user := flag.String("user", "", "github user")
+	githubToken := flag.String("gh-token", "", "Github token ID.")
+	githubOrganization := flag.String("org", "", "Github organization.")
+	user := flag.String("user", "", "Github user.")
 
 	flag.Parse()
 
@@ -32,9 +34,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	if *sshPrivateKey == "" {
+		homeFoler, _ := homedir.Dir()
+
+		*sshPrivateKey = fmt.Sprintf("%s/.ssh/id_rsa", homeFoler)
+	}
+
 	if *user == "" {
 		user = githubOrganization
 	}
 
-	github.Save(*folder, *user, *githubToken, *githubOrganization)
+	github.Save(*folder, *user, *githubToken, *githubOrganization, *sshPrivateKey)
 }
