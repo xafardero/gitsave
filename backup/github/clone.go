@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"sync"
 
-	homedir "github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport"
@@ -13,26 +12,26 @@ import (
 )
 
 //Save Does a backup of all repositories of the github organization.
-func Save(folder string, user string, githubToken string, githubOrganization string) {
+func Save(folder string, user string, githubToken string, githubOrganization string, sshPrivateKey string) {
 	wg := &sync.WaitGroup{}
 
 	ghRepos := getAllGithubRepositories(githubToken, githubOrganization)
 	repos := transformGhReposToRepos(ghRepos)
 
-	clone(folder, user, repos, wg)
+	clone(folder, user, repos, sshPrivateKey, wg)
 
 	wg.Wait()
 }
 
-func clone(folder string, user string, repos []Repository, wg *sync.WaitGroup) {
+func clone(folder string, user string, repos []Repository, sshPrivateKey string, wg *sync.WaitGroup) {
 	for _, repo := range repos {
 		url := fmt.Sprintf("git@github.com:%s/%s.git", user, repo.Name)
 		wg.Add(1)
-		go cloneRepository(folder, repo.Name, url, wg)
+		go cloneRepository(folder, repo.Name, url, sshPrivateKey, wg)
 	}
 }
 
-func cloneRepository(folder string, projectName string, url string, wg *sync.WaitGroup) {
+func cloneRepository(folder string, projectName string, url string, sshPrivateKey string, wg *sync.WaitGroup) {
 	directory := fmt.Sprintf("%s/%s/", folder, projectName)
 
 	_, err := git.PlainClone(
@@ -40,7 +39,7 @@ func cloneRepository(folder string, projectName string, url string, wg *sync.Wai
 		false,
 		&git.CloneOptions{
 			URL:  url,
-			Auth: getSSHKeyAuth(getGithubSSHKey()),
+			Auth: getSSHKeyAuth(sshPrivateKey),
 		},
 	)
 
@@ -61,10 +60,4 @@ func getSSHKeyAuth(privateSSHKeyFile string) transport.AuthMethod {
 	signer, _ := ssh.ParsePrivateKey([]byte(sshKey))
 	auth = &go_git_ssh.PublicKeys{User: "git", Signer: signer}
 	return auth
-}
-
-func getGithubSSHKey() string {
-	home, _ := homedir.Dir()
-
-	return fmt.Sprintf("%s/.ssh/id_rsa_github", home)
 }
