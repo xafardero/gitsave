@@ -14,7 +14,7 @@ CLI app to download all the repositories of a github organization.
 
 Usage
 ```
-gitsave --gh-token tour-token-here --org holaluz
+gitsave --gh-token tour-token-here --org organization-name
 ```
 
 Flags:
